@@ -1,16 +1,50 @@
-# "org" ensures this Service is used with the correct Serverless Framework Access Key.
 org: irresarac
-# "service" is the name of this project. This will also be added to your AWS resource names.
-service: irrenotes
+service: notes-api # Promenite ime servisa da odgovara vašem projektu
 
 provider:
   name: aws
   runtime: nodejs20.x
+  region: eu-north-1 # Dodajte željeni region
 
 functions:
-  hello:
-    handler: handler.hello
+  getNotes:
+    handler: functions/notes/getNotes.handler
     events:
       - httpApi:
-          path: /
+          path: /api/notes
           method: get
+
+  createNote:
+    handler: functions/notes/createNote.handler
+    events:
+      - httpApi:
+          path: /api/notes
+          method: post
+
+  updateNote:
+    handler: functions/notes/updateNote.handler
+    events:
+      - httpApi:
+          path: /api/notes
+          method: put
+
+  deleteNote:
+    handler: functions/notes/deleteNote.handler
+    events:
+      - httpApi:
+          path: /api/notes
+          method: delete
+
+  signup:
+    handler: functions/users/signup.handler
+    events:
+      - httpApi:
+          path: /api/user/signup
+          method: post
+
+  login:
+    handler: functions/users/login.handler
+    events:
+      - httpApi:
+          path: /api/user/login
+          method: post
