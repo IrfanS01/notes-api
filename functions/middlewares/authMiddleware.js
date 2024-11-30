@@ -1,22 +1,36 @@
-const jwt = require("jsonwebtoken");
+import jwt from "jsonwebtoken";
 
 const authMiddleware = () => {
     return {
         before: async (handler) => {
+            // Dohvatanje Authorization tokena iz header-a
             const token = handler.event.headers.Authorization;
 
             if (!token) {
-                throw new Error("Unauthorized");
+                // Bacamo grešku ako token ne postoji
+                throw new Error("Unauthorized: Missing Authorization header");
             }
 
             try {
-                const decoded = jwt.verify(token, "your_secret_key"); // Zameni "your_secret_key" sigurnim ključem
-                handler.event.user = decoded; // Dodaćemo podatke korisnika u event
+                // Validacija tokena koristeći sigurnosni ključ iz environment promenljive
+                const decoded = jwt.verify(token, process.env.JWT_SECRET);
+                
+                // Dodajemo dekodirane podatke korisnika u `event` objekat
+                handler.event.user = decoded;
             } catch (err) {
-                throw new Error("Invalid token");
+                console.error("Token validation error:", err.message);
+
+                // Specifično rukovanje greškama
+                if (err.name === "TokenExpiredError") {
+                    throw new Error("Unauthorized: Token expired");
+                } else if (err.name === "JsonWebTokenError") {
+                    throw new Error("Unauthorized: Invalid token");
+                } else {
+                    throw new Error("Unauthorized: Token verification failed");
+                }
             }
         },
     };
 };
 
-module.exports = authMiddleware;
+export default authMiddleware;

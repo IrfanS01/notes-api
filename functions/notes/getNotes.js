@@ -1,6 +1,6 @@
-const AWS = require("aws-sdk");
-const middy = require("@middy/core");
-const authMiddleware = require("../../middlewares/authMiddleware");
+import AWS from "aws-sdk";
+import middy from "@middy/core";
+import authMiddleware from "../../middlewares/authMiddleware.js";
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const NOTES_TABLE = "NotesTable";
@@ -22,4 +22,4 @@ const getNotes = async (event) => {
     };
 };
 
-module.exports = middy(getNotes).use(authMiddleware());
+export default middy(getNotes).use(authMiddleware());
