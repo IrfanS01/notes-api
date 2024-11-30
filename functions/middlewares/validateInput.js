@@ -1,15 +1,27 @@
+import Joi from "joi";
+
 const validateInput = (schema) => {
     return {
-        before: (handler) => {
-            const { body } = handler.event;
-            const data = JSON.parse(body);
+        before: async (handler) => {
+            // Provera broja ključeva
+            const keys = Object.keys(handler.event.body);
+            const expectedKeys = Object.keys(schema.describe().keys);
 
-            const { error } = schema.validate(data);
+            if (keys.length > expectedKeys.length) {
+                handler.event.error = "Validation error: Too many keys in request body";
+                handler.event.errorCode = 400;
+                throw new Error();
+            }
+
+            // Validacija pomoću Joi
+            const { error } = schema.validate(handler.event.body, { abortEarly: false });
             if (error) {
-                throw new Error(`Validation error: ${error.details[0].message}`);
+                handler.event.error = `Validation error: ${error.details.map((x) => x.message).join(", ")}`;
+                handler.event.errorCode = 400;
+                throw new Error();
             }
         },
     };
 };
 
-module.exports = validateInput;
+export default validateInput;
