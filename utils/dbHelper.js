@@ -1,4 +1,6 @@
 import AWS from "../config/awsConfig.js";
+import awsConfig from "../config/awsConfig.js";
+
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
