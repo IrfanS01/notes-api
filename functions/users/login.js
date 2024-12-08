@@ -6,67 +6,70 @@ import Joi from "joi";
 import validateInput from "../../middlewares/validateInput.js";
 import { getItem } from "../../utils/dbHelper.js";
 
-const USERS_TABLE = "UsersTable"; // Naziv tabele u DynamoDB
+const USERS_TABLE = "UsersTable";
 
 const login = async (event) => {
+    console.log("Event body:", event.body); // Proverite JSON body
+
+    if (!event.body) {
+        return {
+            statusCode: 400,
+            body: JSON.stringify({ message: "Missing request body" }),
+        };
+    }
+
+    const { username, password } = event.body;
+    console.log("Parsed username and password:", username, password);
+
     try {
-        console.log("Received login request:", event.body);
-
-        if (!event.body || !event.body.username || !event.body.password) {
-            return {
-                statusCode: 400, // Bad Request
-                body: JSON.stringify({ message: "Username and password are required" }),
-            };
-        }
-
-        const { username, password } = event.body;
-
-        // Dohvatanje korisnika iz DynamoDB prema korisničkom imenu
+        console.log("Fetching user with username:", username);
         const user = await getItem(USERS_TABLE, { username });
+        console.log("Fetched user:", user);
 
         if (!user) {
             return {
-                statusCode: 401, // Unauthorized
+                statusCode: 401,
                 body: JSON.stringify({ message: "Invalid username or password" }),
             };
         }
 
+        console.log("Validating password for user:", username);
         const validPassword = await bcrypt.compare(password, user.password);
+        console.log("Password validation result:", validPassword);
+
         if (!validPassword) {
             return {
-                statusCode: 401, // Unauthorized
+                statusCode: 401,
                 body: JSON.stringify({ message: "Invalid username or password" }),
             };
         }
 
         const token = jwt.sign(
-            { id: user.username }, // Podaci koje token nosi
-            process.env.JWT_SECRET, // Sigurnosni ključ
-            { expiresIn: "1h" } // Token ističe za 1 sat
+            { id: user.username },
+            process.env.JWT_SECRET,
+            { expiresIn: "1h" }
         );
 
         console.log("User successfully logged in:", username);
 
         return {
-            statusCode: 200, // Success
+            statusCode: 200,
             body: JSON.stringify({ token }),
         };
     } catch (error) {
-        console.error("Login error:", error);
-
+        console.error("Error during login:", error);
         return {
-            statusCode: 500, // Internal Server Error
+            statusCode: 500,
             body: JSON.stringify({ message: "An error occurred during login" }),
         };
     }
 };
 
 const loginSchema = Joi.object({
-    username: Joi.string().required(), // Korisničko ime je obavezno
-    password: Joi.string().required(), // Lozinka je obavezna
+    username: Joi.string().required(),
+    password: Joi.string().required(),
 });
 
-export const handler = middy(login)
+export default middy(login)
     .use(jsonBodyParser())
     .use(validateInput(loginSchema));
-

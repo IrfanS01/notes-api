@@ -6,11 +6,32 @@ provider:
   runtime: nodejs20.x
   region: eu-north-1
   environment:
-    JWT_SECRET: ${ssm:/notes-app/jwt-secret} # Povlačenje tajnog ključa iz SSM Parameter Store
-    USERS_TABLE: UsersTable # Dinamičko postavljanje imena tabela za korišćenje u kodu
+    JWT_SECRET: ${ssm:/notes-app/jwt-secret}
+    USERS_TABLE: UsersTable
     NOTES_TABLE: NotesTable
+  iam:
+    role:
+      statements:
+        - Effect: "Allow"
+          Action:
+            - "dynamodb:GetItem"
+            - "dynamodb:PutItem"
+            - "dynamodb:UpdateItem"
+            - "dynamodb:DeleteItem"
+          Resource:
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/UsersTable"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/NotesTable"
 
 resources:
+  Parameters:
+    CreateNotesTable:
+      Type: String
+      Default: true
+      AllowedValues:
+        - "true"
+        - "false"
+      Description: "Set to 'false' if NotesTable already exists"
+
   Resources:
     UsersTable:
       Type: AWS::DynamoDB::Table
@@ -23,8 +44,11 @@ resources:
           - AttributeName: username
             KeyType: HASH
         BillingMode: PAY_PER_REQUEST
+      DeletionPolicy: Retain # Zadržava tabelu nakon brisanja stack-a
+
     NotesTable:
       Type: AWS::DynamoDB::Table
+      Condition: CreateNotesTableCondition
       Properties:
         TableName: NotesTable
         AttributeDefinitions:
@@ -38,6 +62,11 @@ resources:
           - AttributeName: id
             KeyType: RANGE
         BillingMode: PAY_PER_REQUEST
+      DeletionPolicy: Retain # Zadržava tabelu nakon brisanja stack-a
+
+  Conditions:
+    CreateNotesTableCondition:
+      Fn::Equals: [!Ref CreateNotesTable, "true"]
 
 functions:
   getNotes:
@@ -84,9 +113,8 @@ functions:
 
 # Custom sekcija za dodatna podešavanja
 custom:
-  stage: ${opt:stage, 'dev'} # Podrazumevani stage je 'dev'
+  stage: ${opt:stage, 'dev'}
 
 plugins:
-  - serverless-offline # Omogućava lokalno testiranje
-  - serverless-dotenv-plugin # Podrška za dotenv fajlove
-
+  - serverless-offline
+  - serverless-dotenv-plugin
