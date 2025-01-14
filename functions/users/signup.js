@@ -7,28 +7,43 @@ import { putItem } from "../../utils/dbHelper.js";
 
 const USERS_TABLE = "UsersTable"; // Naziv tabele u DynamoDB
 
-// Glavna funkcija za signup
 const signup = async (event) => {
-    const { username, password } = event.body; // Dohvatanje podataka iz zahteva
+    console.log("Signup event body:", event.body); // Log celog ulaza
 
-    // Hesiranje lozinke
-    const hashedPassword = await bcrypt.hash(password, 10);
+    try {
+        const { username, password } = event.body; // Dohvatanje podataka iz zahteva
+        console.log("Parsed username and password:", username, password);
 
-    // Novi korisnik
-    const newUser = {
-        username, // Korisničko ime kao primarni ključ
-        password: hashedPassword, // Hesirana lozinka
-    };
+        // Hesiranje lozinke
+        const hashedPassword = await bcrypt.hash(password, 10);
+        console.log("Hashed password:", hashedPassword);
 
-    // Ubacivanje korisnika u DynamoDB
-    await putItem(USERS_TABLE, newUser);
+        // Novi korisnik
+        const newUser = {
+            username, // Korisničko ime kao primarni ključ
+            password: hashedPassword, // Hesirana lozinka
+        };
 
-    // Povratna vrednost nakon uspešne registracije
-    return {
-        statusCode: 201,
-        body: JSON.stringify({ message: "User created successfully" }),
-    };
+        console.log("New user object:", newUser);
+
+        // Ubacivanje korisnika u DynamoDB
+        await putItem(USERS_TABLE, newUser);
+        console.log("User inserted into DynamoDB");
+
+        // Povratna vrednost nakon uspešne registracije
+        return {
+            statusCode: 201,
+            body: JSON.stringify({ message: "User created successfully" }),
+        };
+    } catch (error) {
+        console.error("Error in signup function:", error); // Log greške
+        return {
+            statusCode: 500,
+            body: JSON.stringify({ message: "An error occurred during signup" }),
+        };
+    }
 };
+
 
 // Validacija ulaznih podataka
 const signupSchema = Joi.object({
@@ -43,6 +58,6 @@ const signupSchema = Joi.object({
 });
 
 // Export funkcije uz middy middlewares
-export default middy(signup)
+export const handler = middy(signup)
     .use(jsonBodyParser()) // Parsiranje JSON tela zahteva
     .use(validateInput(signupSchema)); // Validacija podataka

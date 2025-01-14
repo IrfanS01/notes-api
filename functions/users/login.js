@@ -44,11 +44,13 @@ const login = async (event) => {
             };
         }
 
-        const token = jwt.sign(
-            { id: user.username },
-            process.env.JWT_SECRET,
-            { expiresIn: "1h" }
-        );
+        // U login.js
+const token = jwt.sign(
+    { userId: user.username }, // umesto { id: user.username }
+    process.env.JWT_SECRET,
+    { expiresIn: "1h" }
+  );
+  
 
         console.log("User successfully logged in:", username);
 
@@ -70,6 +72,8 @@ const loginSchema = Joi.object({
     password: Joi.string().required(),
 });
 
-export default middy(login)
+export const handler = middy(login)
     .use(jsonBodyParser())
     .use(validateInput(loginSchema));
+
+

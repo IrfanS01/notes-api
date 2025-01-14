@@ -12,6 +12,19 @@ const updateNote = async (event) => {
     const { userId } = event.user;
     const { noteId, title, text } = event.body;
 
+    const paramsGet = {
+        TableName: NOTES_TABLE,
+        Key: { id: noteId, userId },
+      };
+      const existingNote = await dynamodb.get(paramsGet).promise();
+      
+      if (!existingNote || !existingNote.Item) {
+          return {
+            statusCode: 404,
+            body: JSON.stringify({ message: "Note not found" }),
+          };
+      }
+
     await dynamodb
         .update({
             TableName: NOTES_TABLE,
@@ -39,7 +52,7 @@ const updateNoteSchema = Joi.object({
     text: Joi.string().max(300).required(),
 });
 
-export default middy(updateNote)
+export const handler = middy(updateNote)
     .use(jsonBodyParser())
     .use(authMiddleware())
     .use(validateInput(updateNoteSchema));
