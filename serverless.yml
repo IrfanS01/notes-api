@@ -70,28 +70,28 @@ resources:
 
 functions:
   getNotes:
-    handler: functions/notes/getNotes.handler
+    handler: functions/notes/getNotes.getNotesHandler
     events:
       - httpApi:
           path: /api/notes
           method: get
 
   createNote:
-    handler: functions/notes/createNote.handler
+    handler: functions/notes/createNote.createNoteHandler
     events:
       - httpApi:
           path: /api/notes
           method: post
 
   updateNote:
-    handler: functions/notes/updateNote.handler
+    handler: functions/notes/updateNote.updateNoteHandler
     events:
       - httpApi:
           path: /api/notes
           method: put
 
   deleteNote:
-    handler: functions/notes/deleteNote.handler
+    handler: functions/notes/deleteNote.deleteNoteHandler
     events:
       - httpApi:
           path: /api/notes

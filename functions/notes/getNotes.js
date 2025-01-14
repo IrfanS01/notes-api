@@ -3,6 +3,8 @@ import middy from "@middy/core";
 import httpErrorHandler from "@middy/http-error-handler"; // Dodano
 import createError from "http-errors"; // Dodano
 import authMiddleware from "../../middlewares/authMiddleware.js";
+console.log("getNotesHandler loaded");
+
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const NOTES_TABLE = "NotesTable";
@@ -43,6 +45,7 @@ const getNotes = async (event) => {
 };
 
 // Dodaj @middy/http-error-handler u chain middlewares
-export const handler = middy(getNotes)
-  .use(authMiddleware()) // Tvoj custom middleware za autentifikaciju
-  .use(httpErrorHandler()); // Automatsko procesuiranje grešaka
+export const getNotesHandler = middy(getNotes)
+    .use(authMiddleware())
+    .use(httpErrorHandler());
+

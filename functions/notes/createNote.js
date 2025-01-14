@@ -8,9 +8,15 @@ import validateInput from "../../middlewares/validateInput.js";
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const NOTES_TABLE = "NotesTable";
 
+// Glavna funkcija za kreiranje beleške
 const createNote = async (event) => {
+    console.log("Handler createNote invoked"); // Log početka
+    console.log("User info from event:", event.user); // Log korisnika
+
     const { userId } = event.user;
     const { title, text } = event.body;
+
+    console.log("Extracted body fields:", { title, text }); // Log polja iz body
 
     const newNote = {
         id: `${userId}-${Date.now()}`, // Generiše jedinstveni ID koristeći userId i timestamp
@@ -21,12 +27,20 @@ const createNote = async (event) => {
         modifiedAt: new Date().toISOString(),
     };
 
-    await dynamodb
-        .put({
-            TableName: NOTES_TABLE,
-            Item: newNote,
-        })
-        .promise();
+    console.log("New note object:", newNote); // Log kreirane beleške pre unosa u DynamoDB
+
+    try {
+        await dynamodb
+            .put({
+                TableName: NOTES_TABLE,
+                Item: newNote,
+            })
+            .promise();
+        console.log("Note successfully inserted into DynamoDB"); // Log uspešnog unosa
+    } catch (error) {
+        console.error("Error inserting note into DynamoDB:", error.message); // Log greške
+        throw new Error("Could not create note. Please try again.");
+    }
 
     return {
         statusCode: 201,
@@ -40,7 +54,8 @@ const createNoteSchema = Joi.object({
     text: Joi.string().max(300).required(),
 });
 
-export const handler = middy(createNote)
-  .use(jsonBodyParser())
-  .use(authMiddleware())
-  .use(validateInput(createNoteSchema));
+export const createNoteHandler = middy(createNote)
+    .use(jsonBodyParser())
+    .use(authMiddleware())
+    .use(validateInput(createNoteSchema));
+
