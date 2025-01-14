@@ -4,32 +4,42 @@ import authMiddleware from "../../middlewares/authMiddleware.js";
 import jsonBodyParser from "@middy/http-json-body-parser";
 import Joi from "joi";
 import validateInput from "../../middlewares/validateInput.js";
+console.log("updateNoteHandler loaded");
+
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const NOTES_TABLE = "NotesTable";
 
 const updateNote = async (event) => {
+    console.log("Pokretanje funkcije updateNote");
+
     const { userId } = event.user;
     const { noteId, title, text } = event.body;
 
     const paramsGet = {
         TableName: NOTES_TABLE,
         Key: { id: noteId, userId },
-      };
-      const existingNote = await dynamodb.get(paramsGet).promise();
-      
-      if (!existingNote || !existingNote.Item) {
-          return {
+    };
+
+    // Provera da li beleška postoji
+    const existingNote = await dynamodb.get(paramsGet).promise();
+    if (!existingNote || !existingNote.Item) {
+        return {
             statusCode: 404,
             body: JSON.stringify({ message: "Note not found" }),
-          };
-      }
+        };
+    }
 
+    // Ažuriranje beleške
     await dynamodb
         .update({
             TableName: NOTES_TABLE,
-            Key: { id: noteId, userId: userId },
-            UpdateExpression: "set title = :title, text = :text, modifiedAt = :modifiedAt",
+            Key: { id: noteId, userId },
+            UpdateExpression: "set #title = :title, #text = :text, modifiedAt = :modifiedAt",
+            ExpressionAttributeNames: {
+                "#title": "title", // Rezervisane reči se moraju mapirati
+                "#text": "text",
+            },
             ExpressionAttributeValues: {
                 ":title": title,
                 ":text": text,
@@ -52,7 +62,7 @@ const updateNoteSchema = Joi.object({
     text: Joi.string().max(300).required(),
 });
 
-export const handler = middy(updateNote)
+export const updateNoteHandler = middy(updateNote)
     .use(jsonBodyParser())
     .use(authMiddleware())
     .use(validateInput(updateNoteSchema));
