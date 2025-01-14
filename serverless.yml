@@ -111,6 +111,13 @@ functions:
           path: /api/user/login
           method: post
 
+  testHandler:
+    handler: functions/testHandler.handler
+    events:
+      - httpApi:
+          path: /test
+          method: get
+
 # Custom sekcija za dodatna podešavanja
 custom:
   stage: ${opt:stage, 'dev'}

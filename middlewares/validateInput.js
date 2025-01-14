@@ -5,29 +5,29 @@ console.log("validateInput.js has been loaded"); // Log za proveru
 const validateInput = (schema) => {
     return {
         before: async (handler) => {
-            // Proveri da li je body definisan i postavi fallback ako nije
-            const keys = Object.keys(handler.event.body || {});
-            const expectedKeys = Object.keys(schema.describe().keys);
+            // Fallback za prazan body
+            const body = handler.event.body || {};
+            console.log("Validating input body:", body);
 
-            // Provera broja ključeva
-            if (keys.length > expectedKeys.length) {
-                handler.event.error = "Validation error: Too many keys in request body";
-                handler.event.errorCode = 400;
-                console.error("Validation Error:", handler.event.error);
-                throw new Error(handler.event.error || "Unknown validation error");
+            // Opis šeme za dodatne provere
+            const schemaKeys = Object.keys(schema.describe().keys);
+            const bodyKeys = Object.keys(body);
+
+            // Provera da li postoji višak ključeva
+            if (bodyKeys.some((key) => !schemaKeys.includes(key))) {
+                const extraKeys = bodyKeys.filter((key) => !schemaKeys.includes(key));
+                console.error("Validation Error: Extra keys in request body:", extraKeys);
+
+                throw new Error(`Validation error: Extra keys in request body: ${extraKeys.join(", ")}`);
             }
 
-            // Validacija pomoću Joi
-            const { error } = schema.validate(handler.event.body, { abortEarly: false });
+            // Joi validacija
+            const { error } = schema.validate(body, { abortEarly: false });
             if (error) {
-                // Logovanje grešaka radi lakšeg debugovanja
-                console.error("Validation Error:", error.details.map((x) => x.message));
-                
-                handler.event.error = `Validation error: ${error.details.map((x) => x.message).join(", ")}`;
-                handler.event.errorCode = 400;
+                const errorMessages = error.details.map((x) => x.message);
+                console.error("Validation Error:", errorMessages);
 
-                // Bacanje greške sa opisom
-                throw new Error(handler.event.error || "Unknown validation error");
+                throw new Error(`Validation error: ${errorMessages.join(", ")}`);
             }
         },
     };

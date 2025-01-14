@@ -40,7 +40,7 @@ const createNoteSchema = Joi.object({
     text: Joi.string().max(300).required(),
 });
 
-export default middy(createNote)
-    .use(jsonBodyParser())
-    .use(authMiddleware())
-    .use(validateInput(createNoteSchema));
+export const handler = middy(createNote)
+  .use(jsonBodyParser())
+  .use(authMiddleware())
+  .use(validateInput(createNoteSchema));
