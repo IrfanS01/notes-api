@@ -21,7 +21,9 @@ const validateInput = (schema) => {
             const extraKeys = bodyKeys.filter((key) => !schemaKeys.includes(key));
             if (extraKeys.length > 0) {
                 console.error("Validation Error: Extra keys in request body:", extraKeys);
-                throw new Error(`Validation error: Extra keys in request body: ${extraKeys.join(", ")}`);
+                const error = new Error(`Validation error: Extra keys in request body: ${extraKeys.join(", ")}`);
+                error.statusCode = 400; // Dodavanje HTTP status koda za grešku
+                throw error;
             }
 
             // Joi validacija
@@ -29,7 +31,10 @@ const validateInput = (schema) => {
             if (error) {
                 const errorMessages = error.details.map((x) => x.message);
                 console.error("Validation Error:", errorMessages);
-                throw new Error(`Validation error: ${errorMessages.join(", ")}`);
+
+                const validationError = new Error(`Validation error: ${errorMessages.join(", ")}`);
+                validationError.statusCode = 400; // Dodavanje HTTP status koda za grešku
+                throw validationError;
             }
 
             console.log("Validation passed successfully"); // Log uspešne validacije
