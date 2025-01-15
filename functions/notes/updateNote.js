@@ -4,6 +4,7 @@ import authMiddleware from "../../middlewares/authMiddleware.js";
 import jsonBodyParser from "@middy/http-json-body-parser";
 import Joi from "joi";
 import validateInput from "../../middlewares/validateInput.js";
+import httpErrorHandler from "@middy/http-error-handler";
 console.log("updateNoteHandler loaded");
 
 
@@ -22,13 +23,13 @@ const updateNote = async (event) => {
     };
 
     // Provera da li beleška postoji
-    const existingNote = await dynamodb.get(paramsGet).promise();
-    if (!existingNote || !existingNote.Item) {
-        return {
-            statusCode: 404,
-            body: JSON.stringify({ message: "Note not found" }),
-        };
-    }
+const existingNote = await dynamodb.get(paramsGet).promise();
+
+if (!existingNote || !existingNote.Item) {
+    // Bacanje greške koristeći http-errors biblioteku
+    throw new createError.NotFound("Note not found");
+}
+
 
     // Ažuriranje beleške
     await dynamodb
@@ -65,4 +66,5 @@ const updateNoteSchema = Joi.object({
 export const updateNoteHandler = middy(updateNote)
     .use(jsonBodyParser())
     .use(authMiddleware())
-    .use(validateInput(updateNoteSchema));
+    .use(validateInput(updateNoteSchema))
+    .use(httpErrorHandler()); // Automatsko rukovanje greškama
