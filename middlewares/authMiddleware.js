@@ -1,58 +1,40 @@
 import jwt from "jsonwebtoken";
+import createError from "http-errors"; // Za kreiranje grešaka sa status kodovima
 
 const authMiddleware = () => {
     return {
         before: async (handler) => {
-            console.log("AuthMiddleware invoked"); // Log na početku middleware-a
+            console.log("AuthMiddleware invoked");
+
+            // Dohvatanje Authorization header-a
+            const authHeader = handler.event.headers.Authorization || handler.event.headers.authorization;
+
+            if (!authHeader) {
+                console.error("Authorization header is missing");
+                throw new createError.Unauthorized("Missing Authorization header");
+            }
+
+            // Provera formata header-a
+            if (!authHeader.startsWith("Bearer ")) {
+                console.error("Invalid Authorization header format");
+                throw new createError.Unauthorized("Invalid Authorization header format");
+            }
+
+            const token = authHeader.split(" ")[1]; // Izvlačenje tokena
 
             try {
-                // Dohvatanje Authorization header-a (prihvata oba slučaja)
-                const authHeader = handler.event.headers.Authorization || handler.event.headers.authorization;
-                console.log("Authorization header:", authHeader); // Log sadržaja header-a
-
-                if (!authHeader) {
-                    console.error("Authorization header is missing"); // Log za nedostatak header-a
-                    const error = new Error("Unauthorized: Missing Authorization header");
-                    error.statusCode = 401; // Dodajemo odgovarajući status kod
-                    throw error;
-                }
-
-                // Proverite da li Authorization header počinje sa "Bearer "
-                if (!authHeader.startsWith("Bearer ")) {
-                    console.error("Invalid Authorization header format"); // Log za nevalidan format
-                    const error = new Error("Unauthorized: Invalid Authorization header format");
-                    error.statusCode = 401; // Dodajemo odgovarajući status kod
-                    throw error;
-                }
-
-                // Izvlačenje tokena iz header-a
-                const token = authHeader.split(" ")[1]; // Uklanjamo "Bearer " prefiks
-                console.log("Extracted token:", token); // Log tokena
-
-                // Validacija tokena
-                const decoded = jwt.verify(token, process.env.JWT_SECRET);
-                console.log("Decoded token:", decoded); // Log dekodiranih podataka
-
-                // Dodavanje dekodiranih podataka korisnika u `event` objekat
-                handler.event.user = decoded;
+                const decoded = jwt.verify(token, process.env.JWT_SECRET); // Validacija tokena
+                handler.event.user = decoded; // Dodaj korisničke podatke u event
             } catch (err) {
-                console.error("Token validation error:", err.message); // Log greške tokom validacije
+                console.error("Token validation error:", err.message);
 
-                // Specifično rukovanje greškama
                 if (err.name === "TokenExpiredError") {
-                    const error = new Error("Unauthorized: Token expired");
-                    error.statusCode = 401; // Dodajemo odgovarajući status kod
-                    throw error;
+                    throw new createError.Unauthorized("Token expired");
                 } else if (err.name === "JsonWebTokenError") {
-                    const error = new Error("Unauthorized: Invalid token");
-                    error.statusCode = 401; // Dodajemo odgovarajući status kod
-                    throw error;
+                    throw new createError.Unauthorized("Invalid token");
+                } else {
+                    throw new createError.Unauthorized("Token verification failed");
                 }
-
-                // Opšta greška vezana za verifikaciju tokena
-                const error = new Error("Unauthorized: Token verification failed");
-                error.statusCode = 401; // Dodajemo odgovarajući status kod
-                throw error;
             }
         },
     };

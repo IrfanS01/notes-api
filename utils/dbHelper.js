@@ -56,6 +56,27 @@ export const deleteItem = async (TableName, Key) => {
     }
 };
 
+// File: utils/dbHelper.js
+export const noteExists = async (TableName, userId, title) => {
+    try {
+        const result = await dynamodb
+            .query({
+                TableName,
+                KeyConditionExpression: "userId = :userId AND title = :title",
+                ExpressionAttributeValues: {
+                    ":userId": userId,
+                    ":title": title,
+                },
+            })
+            .promise();
+        return result.Items.length > 0;
+    } catch (error) {
+        console.error(`Error checking note existence: ${error.message}`);
+        throw new Error("Error checking note existence.");
+    }
+};
+
+
 // Funkcija za pretragu (query) tabele
 export const queryTable = async (TableName, KeyConditionExpression, ExpressionAttributeValues) => {
     try {

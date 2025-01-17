@@ -4,6 +4,7 @@ import authMiddleware from "../../middlewares/authMiddleware.js";
 import jsonBodyParser from "@middy/http-json-body-parser";
 import validateInput from "../../middlewares/validateInput.js";
 import Joi from "joi"; // Import Joi
+import httpErrorHandler from "@middy/http-error-handler";
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 const NOTES_TABLE = "NotesTable";
@@ -61,4 +62,5 @@ const deleteNoteSchema = Joi.object({
 export const deleteNoteHandler = middy(deleteNote)
     .use(jsonBodyParser())
     .use(authMiddleware())
-    .use(validateInput(deleteNoteSchema)); // Validacija
+    .use(validateInput(deleteNoteSchema)) // Validacija
+    .use(httpErrorHandler()); // Automatsko rukovanje greškama
